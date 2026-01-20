@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:mariadb://localhost:3306/finance_db?useSSL=false&serverTimezone=UTC
+    username: root
+    password: secret
+    driver-class-name: org.mariadb.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDBDialect
+  flyway:
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+  security:
+    user:
+      name: admin
+      password: admin  # Temp for dev
