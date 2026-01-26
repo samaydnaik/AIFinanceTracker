@@ -18,3 +18,7 @@ spring:
     user:
       name: admin
       password: admin  # Temp for dev
+
+vaadin:
+  launch-browser: false
+  block-devmode-startup: true
