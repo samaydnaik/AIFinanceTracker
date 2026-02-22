@@ -1,6 +1,7 @@
 import { injectGlobalWebcomponentCss } from 'Frontend/generated/jar-resources/theme-util.js';
 
 import '@vaadin/vertical-layout/src/vaadin-vertical-layout.js';
+import '@vaadin/form-layout/src/vaadin-form-layout.js';
 import '@vaadin/field-highlighter/src/vaadin-field-highlighter.js';
 import '@vaadin/common-frontend/ConnectionIndicator.js';
 import '@vaadin/accordion/src/vaadin-accordion.js';
@@ -32,7 +33,6 @@ import 'Frontend/generated/jar-resources/vaadin-time-picker/timepickerConnector.
 import 'Frontend/generated/jar-resources/vaadin-time-picker/helpers.js';
 import '@vaadin/dialog/src/vaadin-dialog.js';
 import 'Frontend/generated/jar-resources/dndConnector.js';
-import '@vaadin/form-layout/src/vaadin-form-layout.js';
 import '@vaadin/form-layout/src/vaadin-form-item.js';
 import '@vaadin/form-layout/src/vaadin-form-row.js';
 import '@vaadin/grid/src/vaadin-grid-column-group.js';
