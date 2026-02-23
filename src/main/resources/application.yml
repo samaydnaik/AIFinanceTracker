@@ -18,6 +18,26 @@ spring:
     user:
       name: admin
       password: admin  # Temp for dev
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        options:
+          model: llama3.1:8b   # main chat model
+      embeddings:
+        options:
+          model: nomic-embed-text
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 768   # match your embedding model
+        max-document-batch-size: 10000
+
+  datasource-vector:
+    url: jdbc:postgresql://localhost:5432/vector_store
+    username: postgres
+    password: postgres
 
 vaadin:
   launch-browser: false

@@ -8,6 +8,7 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouterLink;
 
 @Route("income")
 public class IncomeView extends VerticalLayout {
@@ -28,9 +29,17 @@ public class IncomeView extends VerticalLayout {
         HorizontalLayout content = new HorizontalLayout(grid, form);
         content.setSizeFull();
 
-        add(new H1("Income Sources"), content);
+        add(nav(), new H1("Income Sources"), content);
         setSizeFull();
         refreshGrid();
+    }
+    
+    private HorizontalLayout nav() {
+        return new HorizontalLayout(
+            new RouterLink("Dashboard", DashboardView.class),
+            new RouterLink("Income", IncomeView.class),
+            new RouterLink("Savings", SavingsView.class)
+        );
     }
 
     private void saveIncome(IncomeSource income) {

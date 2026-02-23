@@ -61,7 +61,6 @@ public class DashboardView extends VerticalLayout {
         HorizontalLayout nav = new HorizontalLayout(
             new RouterLink("Dashboard", DashboardView.class),
             new RouterLink("Income", IncomeView.class),
-            new RouterLink("Expenses", DashboardView.class),
             new RouterLink("Savings", SavingsView.class)
         );
 

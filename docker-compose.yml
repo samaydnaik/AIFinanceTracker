@@ -11,3 +11,11 @@ services:
       - "3306:3306"
     volumes:
       - ./data/mariadb:/var/lib/mysql
+  pgvector:
+      image: ankane/pgvector
+      environment:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: vector_store
+      ports:
+        - "5432:5432"
