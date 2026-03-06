@@ -8,12 +8,16 @@ import com.aiFinanceTracker.track.entities.Expenditure;
 import com.aiFinanceTracker.track.repositories.ExpenditureRepository;
 import com.aiFinanceTracker.track.repositories.IncomeSourceRepository;
 import com.aiFinanceTracker.track.repositories.SavingsRepository;
+import com.aiFinanceTracker.track.service.FinanceAiService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -28,18 +32,21 @@ public class DashboardView extends VerticalLayout {
     private final SavingsRepository savingsRepo;
     private final DatePicker fromDate = new DatePicker("From");
     private final DatePicker toDate = new DatePicker("To");
-
+    
+    private final Button analyzeButton = new Button("Analyze period");
     private final Grid<Expenditure> grid = new Grid<>(Expenditure.class);
     private final ExpenditureForm form;
     private HorizontalLayout summaryLayout;
-
+    private final FinanceAiService aiService;
 
     public DashboardView(ExpenditureRepository expRepo,
                          IncomeSourceRepository incomeRepo,
-                         SavingsRepository savingsRepo) {
+                         SavingsRepository savingsRepo,
+                         FinanceAiService aiService) {
         this.expRepo = expRepo;
         this.incomeRepo = incomeRepo;
         this.savingsRepo = savingsRepo;
+        this.aiService = aiService;
 
         setSizeFull();
         setSpacing(true);
@@ -49,11 +56,12 @@ public class DashboardView extends VerticalLayout {
 
         fromDate.setValue(monthStart);
         toDate.setValue(today);
-
+        
+        analyzeButton.addClickListener(e -> analyzePeriod());
         fromDate.addValueChangeListener(e -> updateSummaryAndGrid());
         toDate.addValueChangeListener(e -> updateSummaryAndGrid());
 
-        HorizontalLayout filters = new HorizontalLayout(fromDate, toDate);
+        HorizontalLayout filters = new HorizontalLayout(fromDate, toDate, analyzeButton);
         filters.setAlignItems(Alignment.END);
 
         
@@ -78,11 +86,48 @@ public class DashboardView extends VerticalLayout {
         content.setSizeFull();
         grid.setSizeFull();
 
-        add(nav, title, summary, content);
+        add(nav, title, filters, summary, content);
         this.summaryLayout = summary;
         refreshGrid();
     }
+    
+    private void analyzePeriod() {
+        LocalDate start = fromDate.getValue();
+        LocalDate end = toDate.getValue();
+        if (start == null || end == null || end.isBefore(start)) {
+            Notification.show("Select a valid From/To range");
+            return;
+        }
 
+        String analysis;
+        try {
+            analysis = aiService.analyzeSpending(start, end);
+        } catch (Exception ex) {
+            Notification.show("AI analysis failed: " + ex.getMessage(), 5000,
+                              Notification.Position.MIDDLE);
+            return;
+        }
+
+        Dialog dialog = new Dialog();
+        dialog.setWidth("600px");
+        dialog.setHeight("400px");
+
+        H3 title = new H3("Spending analysis");
+        Paragraph content = new Paragraph(analysis);
+        content.getStyle().set("white-space", "pre-wrap");
+
+        Button close = new Button("Close", e -> dialog.close());
+
+        VerticalLayout layout = new VerticalLayout(title, content, close);
+        layout.setSizeFull();
+        layout.setPadding(true);
+        layout.setSpacing(true);
+
+        dialog.add(layout);
+        dialog.open();
+    }
+
+    
     private BigDecimal defaultZero(BigDecimal val) {
         return val == null ? BigDecimal.ZERO : val;
     }
