@@ -3,7 +3,8 @@ CREATE TABLE income_sources (
     name VARCHAR(100) NOT NULL,
     amount DECIMAL(12,2),
     frequency VARCHAR(20),
-    start_date DATE
+    date DATE,
+    description VARCHAR(100)
 );
 
 CREATE TABLE expenditures (
@@ -12,7 +13,8 @@ CREATE TABLE expenditures (
     category VARCHAR(50),
     date DATE,
     merchant VARCHAR(100),
-    recurring BOOLEAN DEFAULT FALSE
+    recurring BOOLEAN DEFAULT FALSE,
+	description VARCHAR(100)
 );
 
 CREATE TABLE savings (

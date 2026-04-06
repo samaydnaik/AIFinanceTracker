@@ -19,7 +19,7 @@ public class IncomeForm extends FormLayout {
     private final NumberField amount = new NumberField("Amount");
     private final ComboBox<Frequency> frequency =
             new ComboBox<>("Frequency");
-    private final DatePicker startDate = new DatePicker("Start date");
+    private final DatePicker date = new DatePicker("Start date");
 
     private final Button save = new Button("Save");
 
@@ -37,9 +37,9 @@ public class IncomeForm extends FormLayout {
 
         amount.setMin(0);
         frequency.setItems(Frequency.values());
-        startDate.setValue(LocalDate.now());
+        date.setValue(LocalDate.now());
 
-        add(name, amount, frequency, startDate, save);
+        add(name, amount, frequency, date, save);
 
         binder.bindInstanceFields(this);
         binder.setBean(new IncomeSource());
@@ -65,7 +65,7 @@ public class IncomeForm extends FormLayout {
             amount.setValue(income.getAmount() == null
                     ? 0d : income.getAmount().doubleValue());
             frequency.setValue(income.getFrequency());
-            startDate.setValue(income.getStartDate());
+            date.setValue(income.getDate());
         }
     }
 
@@ -74,6 +74,6 @@ public class IncomeForm extends FormLayout {
         name.clear();
         amount.clear();
         frequency.clear();
-        startDate.setValue(LocalDate.now());
+        date.setValue(LocalDate.now());
     }
 }

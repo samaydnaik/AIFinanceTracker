@@ -19,6 +19,10 @@ public class IncomeSource {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @NotBlank private String name;
+	private BigDecimal amount;
+    @Enumerated(EnumType.STRING) private Frequency frequency;
+    private LocalDate date = LocalDate.now();
+    private String description;
     public Long getId() {
 		return id;
 	}
@@ -43,15 +47,18 @@ public class IncomeSource {
 	public void setFrequency(Frequency frequency) {
 		this.frequency = frequency;
 	}
-	public LocalDate getStartDate() {
-		return startDate;
+	public LocalDate getDate() {
+		return date;
 	}
-	public void setStartDate(LocalDate startDate) {
-		this.startDate = startDate;
+	public void setDate(LocalDate date) {
+		this.date = date;
 	}
-	private BigDecimal amount;
-    @Enumerated(EnumType.STRING) private Frequency frequency;
-    private LocalDate startDate = LocalDate.now();
+	public String getDescription() {
+		return description;
+	}
+	public void setDescription(String description) {
+		this.description = description;
+	}
     
     // enum Frequency { MONTHLY, WEEKLY, ONETIME }
     // getters/setters/constructor

@@ -5,10 +5,12 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 
 import com.aiFinanceTracker.track.entities.Expenditure;
+import com.aiFinanceTracker.track.interfaces.FinanceSummaryService;
 import com.aiFinanceTracker.track.repositories.ExpenditureRepository;
 import com.aiFinanceTracker.track.repositories.IncomeSourceRepository;
 import com.aiFinanceTracker.track.repositories.SavingsRepository;
 import com.aiFinanceTracker.track.service.FinanceAiService;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -30,6 +32,8 @@ public class DashboardView extends VerticalLayout {
     private final ExpenditureRepository expRepo;
     private final IncomeSourceRepository incomeRepo;
     private final SavingsRepository savingsRepo;
+    private final FinanceSummaryService financeSummaryService;
+
     private final DatePicker fromDate = new DatePicker("From");
     private final DatePicker toDate = new DatePicker("To");
     
@@ -42,11 +46,12 @@ public class DashboardView extends VerticalLayout {
     public DashboardView(ExpenditureRepository expRepo,
                          IncomeSourceRepository incomeRepo,
                          SavingsRepository savingsRepo,
-                         FinanceAiService aiService) {
+                         FinanceAiService aiService, FinanceSummaryService financeSummaryService) {
         this.expRepo = expRepo;
         this.incomeRepo = incomeRepo;
         this.savingsRepo = savingsRepo;
         this.aiService = aiService;
+        this.financeSummaryService = financeSummaryService;
 
         setSizeFull();
         setSpacing(true);
@@ -76,6 +81,10 @@ public class DashboardView extends VerticalLayout {
 
         // Summary cards
         HorizontalLayout summary = buildSummary();
+        
+        Button importButton = new Button("Import SBI CSV",
+                e -> UI.getCurrent().navigate("import"));
+        add(importButton);
 
         // Grid + form (Expenditures CRUD)
         configureGrid();
@@ -194,8 +203,11 @@ public class DashboardView extends VerticalLayout {
 
         BigDecimal totalExpenses = defaultZero(expRepo.totalSpentBetween(start, end));
         BigDecimal totalIncome = defaultZero(incomeRepo.totalIncomeUpTo(end)); // or between
+        BigDecimal net = defaultZero(financeSummaryService.getNetSavings(start, end));
+
+        // If your FinanceSummaryService also has a totalSavings(from,to),
+        // use that; otherwise keep the repo call as-is for now:
         BigDecimal totalSavings = defaultZero(savingsRepo.totalSavings());
-        BigDecimal net = totalIncome.subtract(totalExpenses);
 
         HorizontalLayout summary = new HorizontalLayout(
             summaryCard("Income", totalIncome),

@@ -24,6 +24,7 @@ public class Expenditure {
     private LocalDate date = LocalDate.now();
     private String merchant;
     private boolean recurring;
+    private String description; 
     // enum Category { FOOD, RENT, TRANSPORT, ... }
     // getters/setters
 	public Long getId() {
@@ -61,5 +62,11 @@ public class Expenditure {
 	}
 	public void setRecurring(boolean recurring) {
 		this.recurring = recurring;
+	}
+	public String getDescription() {
+		return description;
+	}
+	public void setDescription(String description) {
+		this.description = description;
 	}
 }

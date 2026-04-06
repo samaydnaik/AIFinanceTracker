@@ -21,7 +21,7 @@ public class IncomeView extends VerticalLayout {
         this.repo = repo;
         this.form = new IncomeForm(this::saveIncome);
 
-        grid.setColumns("id", "name", "amount", "frequency", "startDate");
+        grid.setColumns("id", "name", "amount", "frequency", "date");
         grid.addComponentColumn(i ->
             new Button("Delete", e -> deleteIncome(i))
         ).setHeader("Actions");
