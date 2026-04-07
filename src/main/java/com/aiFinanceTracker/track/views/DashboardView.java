@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 
+import com.aiFinanceTracker.track.dto.SpendingAnalysisResult;
 import com.aiFinanceTracker.track.entities.Expenditure;
 import com.aiFinanceTracker.track.interfaces.FinanceSummaryService;
 import com.aiFinanceTracker.track.repositories.ExpenditureRepository;
@@ -108,31 +109,32 @@ public class DashboardView extends VerticalLayout {
             return;
         }
 
-        String analysis;
+        SpendingAnalysisResult result;
         try {
-            analysis = aiService.analyzeSpending(start, end);
+            result = aiService.analyzeSpending(start, end);
         } catch (Exception ex) {
             Notification.show("AI analysis failed: " + ex.getMessage(), 5000,
-                              Notification.Position.MIDDLE);
+                    Notification.Position.MIDDLE);
             return;
         }
 
         Dialog dialog = new Dialog();
-        dialog.setWidth("600px");
-        dialog.setHeight("400px");
+        dialog.setWidth("650px");
+        dialog.setHeight("500px");
 
-        H3 title = new H3("Spending analysis");
-        Paragraph content = new Paragraph(analysis);
-        content.getStyle().set("white-space", "pre-wrap");
+        H3 title = new H3("Spending analysis (" + start + " to " + end + ")");
+
+        VerticalLayout contentLayout = new VerticalLayout();
+        contentLayout.setPadding(true);
+        contentLayout.setSpacing(true);
+        contentLayout.setSizeFull();
+
+        renderAnalysisInto(contentLayout, result);
 
         Button close = new Button("Close", e -> dialog.close());
+        contentLayout.add(close);
 
-        VerticalLayout layout = new VerticalLayout(title, content, close);
-        layout.setSizeFull();
-        layout.setPadding(true);
-        layout.setSpacing(true);
-
-        dialog.add(layout);
+        dialog.add(contentLayout);
         dialog.open();
     }
 
@@ -217,6 +219,58 @@ public class DashboardView extends VerticalLayout {
         );
         summary.setWidthFull();
         return summary;
+    }
+    
+    private void renderAnalysisInto(VerticalLayout container, SpendingAnalysisResult result) {
+        container.removeAll();
+
+        // Summary
+        H3 summaryHeader = new H3("Summary");
+        Paragraph summary = new Paragraph(result.getSummary());
+
+        // Top issues
+        H3 issuesHeader = new H3("Top issues");
+        com.vaadin.flow.component.html.UnorderedList issuesList =
+                new com.vaadin.flow.component.html.UnorderedList();
+        if (result.getTopIssues() != null && !result.getTopIssues().isEmpty()) {
+            result.getTopIssues()
+                  .forEach(issue -> issuesList.add(new com.vaadin.flow.component.html.ListItem(issue)));
+        } else {
+            issuesList.add(new com.vaadin.flow.component.html.ListItem("No specific issues identified."));
+        }
+
+        // Recommendations
+        H3 recsHeader = new H3("Recommendations");
+        com.vaadin.flow.component.html.UnorderedList recsList =
+                new com.vaadin.flow.component.html.UnorderedList();
+        if (result.getRecommendations() != null && !result.getRecommendations().isEmpty()) {
+            result.getRecommendations()
+                  .forEach(rec -> recsList.add(new com.vaadin.flow.component.html.ListItem(rec)));
+        } else {
+            recsList.add(new com.vaadin.flow.component.html.ListItem("No recommendations available."));
+        }
+
+        // Score (optional, with color)
+        Span scoreSpan = null;
+        if (result.getScore() != null) {
+            int score = result.getScore();
+            scoreSpan = new Span("Score: " + score + "/10");
+            if (score >= 8) {
+                scoreSpan.getStyle().set("color", "green");
+            } else if (score >= 5) {
+                scoreSpan.getStyle().set("color", "orange");
+            } else {
+                scoreSpan.getStyle().set("color", "red");
+            }
+        }
+
+        container.add(summaryHeader, summary,
+                      issuesHeader, issuesList,
+                      recsHeader, recsList);
+
+        if (scoreSpan != null) {
+            container.add(scoreSpan);
+        }
     }
 
 
