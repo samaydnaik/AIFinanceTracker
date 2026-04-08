@@ -28,6 +28,7 @@ public class SecurityConfig {
                     "/icons/**",
                     "/images/**"
                 ).permitAll()
+                .requestMatchers("/api/ai/**", "/chat").permitAll()
                 // everything else (like /hello, /) requires login
                 .anyRequest().authenticated()
             )

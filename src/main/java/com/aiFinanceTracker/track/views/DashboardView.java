@@ -73,11 +73,11 @@ public class DashboardView extends VerticalLayout {
         
         // Navigation bar
         HorizontalLayout nav = new HorizontalLayout(
-            new RouterLink("Dashboard", DashboardView.class),
-            new RouterLink("Income", IncomeView.class),
-            new RouterLink("Savings", SavingsView.class)
-        );
-
+        	    new RouterLink("Dashboard", DashboardView.class),
+        	    new RouterLink("Income", IncomeView.class),
+        	    new RouterLink("Savings", SavingsView.class),
+        	    new RouterLink("Chat", ChatView.class)   // new
+        	);
         H1 title = new H1("AI Finance Tracker");
 
         // Summary cards

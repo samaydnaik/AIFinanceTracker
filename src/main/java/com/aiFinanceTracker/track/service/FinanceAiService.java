@@ -13,112 +13,110 @@ import com.aiFinanceTracker.track.repositories.ExpenditureRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 public class FinanceAiService {
 
-    private final ChatClient chatClient;
-    private final ExpenditureRepository expRepo;
-    private final FinanceSummaryService financeSummaryService;
-    private final ObjectMapper objectMapper;
+	private final ChatClient chatClient;
+	private final ExpenditureRepository expRepo;
+	private final FinanceToolService financeToolService;
+	private final ObjectMapper objectMapper;
+	private final PromptTemplate analyseTemplate;
 
-    public FinanceAiService(ChatClient chatClient,
-                            ExpenditureRepository expRepo,
-                            FinanceSummaryService financeSummaryService,
-                            ObjectMapper objectMapper) {
-        this.chatClient = chatClient;
-        this.expRepo = expRepo;
-        this.financeSummaryService = financeSummaryService;
-        this.objectMapper = objectMapper;
-    }
+	public FinanceAiService(ChatClient chatClient, ExpenditureRepository expRepo, FinanceToolService financeToolService,
+			ObjectMapper objectMapper) {
+		this.chatClient = chatClient;
+		this.expRepo = expRepo;
+		this.financeToolService = financeToolService;
+		this.objectMapper = objectMapper;
 
-    public SpendingAnalysisResult analyzeSpending(LocalDate from, LocalDate to) {
-        List<Expenditure> exps = expRepo.findByDateBetween(from, to);
-        if (exps.isEmpty()) {
-            SpendingAnalysisResult empty = new SpendingAnalysisResult();
-            empty.setSummary("No expenses found in the selected period.");
-            empty.setTopIssues(List.of());
-            empty.setRecommendations(List.of());
-            empty.setScore(null);
-            return empty;
-        }
+		String templateText = """
+				You are a helpful personal finance advisor for an Indian salaried person.
+				Analyse this person's spending in INR for the given period and give very concrete, practical advice.
 
-        BigDecimal totalExpenses = financeSummaryService.getTotalExpenses(from, to);
-        BigDecimal totalIncome = financeSummaryService.getTotalIncome(from, to);
-        BigDecimal netSavings = financeSummaryService.getNetSavings(from, to);
-        Map<Category, BigDecimal> byCategory =
-                financeSummaryService.getSpendingByCategory(from, to);
+				Period: {from} to {to}
+				Total income: ₹{totalIncome}
+				Total expenses: ₹{totalExpenses}
+				Net savings: ₹{netSavings}
 
-        String prompt = buildAnalysePrompt(from, to, totalIncome, totalExpenses, netSavings, byCategory);
+				Spending by category:
+				{byCategory}
 
-        String raw = chatClient
-                .prompt()
-                .user(prompt)
-                .call()
-                .content(); // standard ChatClient usage[web:31][web:34]
+				Return your answer ONLY as RFC8259-compliant JSON matching this Java class:
 
-        return parseAnalysisResult(raw);
-    }
+				class SpendingAnalysisResult {
+				String summary;                // 2-3 sentence overview of their situation
+				List<String> topIssues;        // up to 3 specific spending problems
+				List<String> recommendations;  // up to 5 concrete, actionable tips
+				Integer score;                 // 0-10, where 10 = excellent financial health
+				}
 
-    private String buildAnalysePrompt(LocalDate from,
-                                      LocalDate to,
-                                      BigDecimal totalIncome,
-                                      BigDecimal totalExpenses,
-                                      BigDecimal netSavings,
-                                      Map<Category, BigDecimal> byCategory) {
+				Do not include markdown, code fences, comments, or explanations.
+				Just return the JSON object.
+				""";
 
-        StringBuilder categories = new StringBuilder();
-        byCategory.forEach((cat, amount) -> {
-            categories.append("- ").append(cat.name())
-                    .append(": ₹").append(amount).append("\n");
-        });
+		this.analyseTemplate = new PromptTemplate(templateText); // fine to build manually[web:25][web:46]
+	}
 
-        return """
-You are a helpful personal finance advisor for an Indian salaried person.
-Analyse this person's spending in INR for the given period and give very concrete, practical advice.
+	public SpendingAnalysisResult analyzeSpending(LocalDate from, LocalDate to) {
+		List<Expenditure> exps = expRepo.findByDateBetween(from, to);
+		if (exps.isEmpty()) {
+			SpendingAnalysisResult empty = new SpendingAnalysisResult();
+			empty.setSummary("No expenses found in the selected period.");
+			empty.setTopIssues(List.of());
+			empty.setRecommendations(List.of());
+			empty.setScore(null);
+			return empty;
+		}
 
-Period: %s to %s
-Total income: ₹%s
-Total expenses: ₹%s
-Net savings: ₹%s
+		BigDecimal totalExpenses = financeToolService.getTotalExpenses(from, to);
+		BigDecimal totalIncome = financeToolService.getTotalIncome(from, to);
+		BigDecimal netSavings = financeToolService.getNetSavings(from, to);
+		Map<Category, BigDecimal> byCategory = financeToolService.getSpendingByCategory(from, to);
 
-Spending by category:
-%s
+		String prompt = buildAnalysePrompt(from, to, totalIncome, totalExpenses, netSavings, byCategory);
 
-Return your answer ONLY as RFC8259-compliant JSON matching this Java class:
+		String raw = chatClient.prompt().user(prompt).call().content(); // standard ChatClient usage[web:31][web:34]
 
-class SpendingAnalysisResult {
-  String summary;                // 2-3 sentence overview of their situation
-  List<String> topIssues;        // up to 3 specific spending problems
-  List<String> recommendations;  // up to 5 concrete, actionable tips
-  Integer score;                 // 0-10, where 10 = excellent financial health
-}
+		return parseAnalysisResult(raw);
+	}
 
-Do not include markdown, code fences, comments, or explanations.
-Just return the JSON object.
-""".formatted(from, to, totalIncome, totalExpenses, netSavings, categories);
-    }
+	private String buildAnalysePrompt(LocalDate from, LocalDate to, BigDecimal totalIncome, BigDecimal totalExpenses,
+			BigDecimal netSavings, Map<Category, BigDecimal> byCategory) {
 
-    private SpendingAnalysisResult parseAnalysisResult(String raw) {
-        try {
-            String cleaned = raw.trim();
-            if (cleaned.startsWith("```")) {
-                // handle ```json ... ``` or ``` ... ```
-                int firstNewline = cleaned.indexOf('\n');
-                int lastFence = cleaned.lastIndexOf("```");
-                if (firstNewline != -1 && lastFence != -1 && lastFence > firstNewline) {
-                    cleaned = cleaned.substring(firstNewline + 1, lastFence).trim();
-                }
-            }
-            return objectMapper.readValue(cleaned, SpendingAnalysisResult.class); // Jackson mapping pattern[web:13][web:35]
-        } catch (Exception e) {
-            SpendingAnalysisResult fallback = new SpendingAnalysisResult();
-            fallback.setSummary("AI could not return structured JSON. Raw response:\n\n" + raw);
-            fallback.setTopIssues(List.of());
-            fallback.setRecommendations(List.of());
-            fallback.setScore(null);
-            return fallback;
-        }
-    }
+		StringBuilder categories = new StringBuilder();
+		byCategory.forEach((cat, amount) -> {
+			categories.append("- ").append(cat.name()).append(": ₹").append(amount).append("\n");
+		});
+
+		Map<String, Object> vars = Map.of("from", from.toString(), "to", to.toString(), "totalIncome", totalIncome,
+				"totalExpenses", totalExpenses, "netSavings", netSavings, "byCategory", categories.toString());
+
+		return analyseTemplate.render(vars);
+	}
+
+	private SpendingAnalysisResult parseAnalysisResult(String raw) {
+		try {
+			String cleaned = raw.trim();
+			if (cleaned.startsWith("```")) {
+				// handle ```json ... ``` or ``` ... ```
+				int firstNewline = cleaned.indexOf('\n');
+				int lastFence = cleaned.lastIndexOf("```");
+				if (firstNewline != -1 && lastFence != -1 && lastFence > firstNewline) {
+					cleaned = cleaned.substring(firstNewline + 1, lastFence).trim();
+				}
+			}
+			return objectMapper.readValue(cleaned, SpendingAnalysisResult.class); // Jackson mapping
+																					// pattern[web:13][web:35]
+		} catch (Exception e) {
+			SpendingAnalysisResult fallback = new SpendingAnalysisResult();
+			fallback.setSummary("AI could not return structured JSON. Raw response:\n\n" + raw);
+			fallback.setTopIssues(List.of());
+			fallback.setRecommendations(List.of());
+			fallback.setScore(null);
+			return fallback;
+		}
+	}
 }
