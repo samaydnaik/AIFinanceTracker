@@ -18,7 +18,8 @@ import jakarta.validation.constraints.NotBlank;
 public class IncomeSource {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @NotBlank private String name;
+    @NotBlank
+	private String name;
 	private BigDecimal amount;
     @Enumerated(EnumType.STRING) private Frequency frequency;
     private LocalDate date = LocalDate.now();
